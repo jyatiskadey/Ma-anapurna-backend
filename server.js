@@ -8,7 +8,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const storeRoutes = require("./routes/storeRoutes");
 const collectionRoutes = require("./routes/collectionRoutes");
 const managerRoutes = require("./routes/managerRoutes");
-const { default: axios } = require("axios");
+const axios = require("axios");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
