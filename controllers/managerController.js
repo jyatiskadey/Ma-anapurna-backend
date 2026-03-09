@@ -1,0 +1,53 @@
+const Manager = require("../models/Manager");
+const jwt = require("jsonwebtoken");
+
+// Manager registration
+exports.register = async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password)
+    return res
+      .status(400)
+      .json({ message: "Username and password are required" });
+
+  try {
+    // Check if manager already exists
+    const existingManager = await Manager.findOne({ username });
+    if (existingManager)
+      return res.status(400).json({ message: "Manager already exists" });
+
+    const newManager = await Manager.create({ username, password });
+
+    res.status(201).json({
+      message: "Manager registered successfully",
+      manager: { username: newManager.username, id: newManager._id },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Manager login
+exports.login = async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const manager = await Manager.findOne({ username });
+    if (!manager) return res.status(401).json({ message: "Invalid username" });
+
+    const isMatch = await manager.matchPassword(password);
+    if (!isMatch) return res.status(401).json({ message: "Invalid password" });
+
+    const token = jwt.sign(
+      { id: manager._id, username: manager.username },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    res.json({ message: "Login successful", token });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
