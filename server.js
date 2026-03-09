@@ -17,17 +17,25 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json());
 
-const url = `https://ma-anapurna-backend.onrender.com/`;
+const url = `https://ma-anapurna-backend.onrender.com`;
 const interval = 10000;
 
 function reloadWebsite() {
   axios
     .get(url)
     .then((response) => {
-      console.log("website reloded");
+      console.log(`Website reloaded successfully. Status: ${response.status}`);
     })
     .catch((error) => {
-      console.error(`Error : ${error.message}`);
+      if (error.response) {
+        console.error(
+          `HTTP Error: ${error.response.status} ${error.response.statusText}`,
+        );
+      } else if (error.request) {
+        console.error("Network Error: No response received from server");
+      } else {
+        console.error(`Error: ${error.message}`);
+      }
     });
 }
 

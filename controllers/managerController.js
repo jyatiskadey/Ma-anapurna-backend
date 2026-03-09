@@ -45,7 +45,7 @@ exports.login = async (req, res) => {
       { expiresIn: "1h" },
     );
 
-    res.json({ message: "Login successful", token });
+    res.json({ message: "Login successful", token, username: manager.username });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
@@ -110,6 +110,49 @@ exports.downloadDailyReport = async (req, res) => {
     );
 
     res.send(buffer);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getManagers = async (req, res) => {
+  try {
+    const managers = await Manager.find({}, "-password");
+    res.json({ managers });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.updateManager = async (req, res) => {
+  const { id } = req.params;
+  const { username, password } = req.body;
+
+  try {
+    const manager = await Manager.findById(id);
+    if (!manager) return res.status(404).json({ message: "Manager not found" });
+
+    if (username) manager.username = username;
+    if (password) manager.password = password;
+
+    await manager.save();
+    res.json({ message: "Manager updated successfully", manager: { username: manager.username, id: manager._id } });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.deleteManager = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const manager = await Manager.findByIdAndDelete(id);
+    if (!manager) return res.status(404).json({ message: "Manager not found" });
+
+    res.json({ message: "Manager deleted successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });

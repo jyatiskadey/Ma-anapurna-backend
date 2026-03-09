@@ -60,3 +60,28 @@ exports.updateStoreStatus = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+exports.updateStore = async (req, res) => {
+  const { storeId } = req.params;
+  const { storeName, address, targetAmount } = req.body;
+
+  try {
+    const store = await Store.findById(storeId);
+    if (!store) return res.status(404).json({ message: "Store not found" });
+
+    if (storeName) store.storeName = storeName;
+    if (address) store.address = address;
+    if (targetAmount !== undefined) {
+      store.targetAmount = targetAmount;
+      // Recalculate remainingAmount
+      store.remainingAmount = targetAmount - store.totalCollected;
+    }
+
+    await store.save();
+    res.json({ message: "Store updated successfully", store });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
