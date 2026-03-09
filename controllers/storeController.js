@@ -3,14 +3,24 @@ const Collection = require("../models/Collection");
 
 // Add store
 exports.addStore = async (req, res) => {
-  const { storeName, address } = req.body;
+  const { storeName, address, collection } = req.body;
 
-  if (!storeName || !address) {
-    return res.status(400).json({ message: "Store name and address required" });
+  // Validate required fields
+  if (!storeName || !address || collection === undefined) {
+    return res
+      .status(400)
+      .json({ message: "Store name, address, and collection are required" });
   }
 
   try {
-    const store = await Store.create({ storeName, address }); // status default active
+    const store = await Store.create({
+      storeName,
+      address,
+      targetAmount: collection,
+      remainingAmount: collection,
+      status: "active",
+    });
+
     res.json({ message: "Store added successfully", store });
   } catch (error) {
     console.error(error);
@@ -21,22 +31,8 @@ exports.addStore = async (req, res) => {
 // Get all stores
 exports.getStores = async (req, res) => {
   try {
-    const stores = await Store.find().lean();
-
-    // For each store, calculate total collection
-    const storesWithAmount = await Promise.all(
-      stores.map(async (store) => {
-        const collections = await Collection.find({ storeId: store._id });
-        const totalAmount = collections.reduce((sum, c) => sum + c.amount, 0);
-
-        return {
-          ...store,
-          totalAmount, // new field
-        };
-      }),
-    );
-
-    res.json({ stores: storesWithAmount });
+    const stores = await Store.find().sort({ createdAt: -1 });
+    res.json({ stores });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });

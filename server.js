@@ -18,7 +18,7 @@ app.use(bodyParser.json());
 app.use(express.json());
 
 const url = `https://ma-anapurna-backend.onrender.com/`;
-const interval = 30000;
+const interval = 10000;
 
 function reloadWebsite() {
   axios
