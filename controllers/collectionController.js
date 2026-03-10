@@ -19,21 +19,30 @@ exports.saveCollection = async (req, res) => {
     const collectionDate = new Date(date);
     let targetStoreId = storeId;
 
-    // 1. If saleAmount > 0, create a NEW store row instead of updating the old one
+    // Validation: Collection cannot exceed Sale Amount
     if (saleAmount && saleAmount > 0) {
+      if (amount && amount > saleAmount) {
+        return res.status(400).json({ message: `Collection amount (${amount}) cannot exceed Sale amount (${saleAmount})` });
+      }
+
       const newStore = await Store.create({
         storeName: store.storeName,
         pageNumber: store.pageNumber,
         targetAmount: saleAmount,
-        totalCollected: amount || 0, // Initial payment against this specific sale
+        totalCollected: amount || 0,
         remainingAmount: saleAmount - (amount || 0),
         date: collectionDate,
         description: description,
         status: "active"
       });
       targetStoreId = newStore._id;
-      store = newStore; // Use the new store for the response
+      store = newStore;
     } else if (amount && amount > 0) {
+      // Validation: Collection cannot exceed Current Remaining Amount
+      if (amount > store.remainingAmount) {
+        return res.status(400).json({ message: `Collection amount (${amount}) cannot exceed Due Balance (${store.remainingAmount})` });
+      }
+
       // Only payment, update existing store
       store.totalCollected += amount;
       store.remainingAmount = store.targetAmount - store.totalCollected;
