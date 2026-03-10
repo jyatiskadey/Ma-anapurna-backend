@@ -3,21 +3,22 @@ const Collection = require("../models/Collection");
 
 // Add store
 exports.addStore = async (req, res) => {
-  const { storeName, address, collection } = req.body;
+  const { storeName, collection, pageNumber, description } = req.body;
 
   // Validate required fields
-  if (!storeName || !address || collection === undefined) {
+  if (!storeName || collection === undefined) {
     return res
       .status(400)
-      .json({ message: "Store name, address, and collection are required" });
+      .json({ message: "Store name and collection are required" });
   }
 
   try {
     const store = await Store.create({
       storeName,
-      address,
       targetAmount: collection,
       remainingAmount: collection,
+      pageNumber,
+      description,
       status: "active",
     });
 
@@ -63,19 +64,20 @@ exports.updateStoreStatus = async (req, res) => {
 
 exports.updateStore = async (req, res) => {
   const { storeId } = req.params;
-  const { storeName, address, targetAmount } = req.body;
+  const { storeName, targetAmount, pageNumber, description } = req.body;
 
   try {
     const store = await Store.findById(storeId);
     if (!store) return res.status(404).json({ message: "Store not found" });
 
     if (storeName) store.storeName = storeName;
-    if (address) store.address = address;
     if (targetAmount !== undefined) {
       store.targetAmount = targetAmount;
       // Recalculate remainingAmount
       store.remainingAmount = targetAmount - store.totalCollected;
     }
+    if (pageNumber !== undefined) store.pageNumber = pageNumber;
+    if (description !== undefined) store.description = description;
 
     await store.save();
     res.json({ message: "Store updated successfully", store });

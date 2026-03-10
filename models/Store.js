@@ -3,7 +3,6 @@ const mongoose = require("mongoose");
 const storeSchema = new mongoose.Schema(
   {
     storeName: { type: String, required: true },
-    address: { type: String, required: true },
 
     // Target collection for this store set by admin
     targetAmount: { type: Number, required: true, default: 0 },
@@ -13,6 +12,9 @@ const storeSchema = new mongoose.Schema(
 
     // Remaining collection (targetAmount - totalCollected)
     remainingAmount: { type: Number, required: true, default: 0 },
+
+    pageNumber: { type: Number },
+    description: { type: String },
 
     status: { type: String, default: "active" },
   },
