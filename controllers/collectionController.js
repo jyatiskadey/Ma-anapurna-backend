@@ -25,7 +25,7 @@ exports.saveCollection = async (req, res) => {
     });
 
     if (collection) {
-      collection.amount = amount;
+      collection.amount += amount;
       await collection.save();
     } else {
       collection = await Collection.create({
