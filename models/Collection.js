@@ -6,6 +6,7 @@ const collectionSchema = new mongoose.Schema(
     managerId: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" }, // Or manager model
     date: { type: Date, required: true },
     amount: { type: Number, required: true },
+    description: { type: String },
   },
   { timestamps: true }
 );

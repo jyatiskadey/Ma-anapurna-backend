@@ -15,6 +15,7 @@ const storeSchema = new mongoose.Schema(
 
     pageNumber: { type: Number },
     description: { type: String },
+    date: { type: Date },
 
     status: { type: String, default: "active" },
   },

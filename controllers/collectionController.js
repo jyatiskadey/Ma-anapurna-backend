@@ -2,53 +2,71 @@ const Collection = require("../models/Collection");
 const Store = require("../models/Store");
 
 exports.saveCollection = async (req, res) => {
-  const { storeId, amount, date } = req.body;
+  const { storeId, amount, date, saleAmount, description } = req.body;
 
-  if (!storeId || amount === undefined || !date) {
+  if (!storeId || !date) {
     return res
       .status(400)
-      .json({ message: "Store, amount, and date are required" });
+      .json({ message: "Store and date are required" });
   }
 
   try {
-    const store = await Store.findById(storeId);
+    let store = await Store.findById(storeId);
     if (!store) {
       return res.status(404).json({ message: "Store not found" });
     }
 
     const collectionDate = new Date(date);
+    let targetStoreId = storeId;
 
-    // Find existing collection for this store & date
-    let collection = await Collection.findOne({
-      storeId,
-      date: collectionDate,
-    });
-
-    if (collection) {
-      collection.amount += amount;
-      await collection.save();
-    } else {
-      collection = await Collection.create({
-        storeId,
+    // 1. If saleAmount > 0, create a NEW store row instead of updating the old one
+    if (saleAmount && saleAmount > 0) {
+      const newStore = await Store.create({
+        storeName: store.storeName,
+        pageNumber: store.pageNumber,
+        targetAmount: saleAmount,
+        totalCollected: amount || 0, // Initial payment against this specific sale
+        remainingAmount: saleAmount - (amount || 0),
         date: collectionDate,
-        amount,
+        description: description,
+        status: "active"
       });
+      targetStoreId = newStore._id;
+      store = newStore; // Use the new store for the response
+    } else if (amount && amount > 0) {
+      // Only payment, update existing store
+      store.totalCollected += amount;
+      store.remainingAmount = store.targetAmount - store.totalCollected;
+      await store.save();
     }
 
-    // Calculate new totalCollected for the store
-    const allCollections = await Collection.find({ storeId });
-    const totalCollected = allCollections.reduce((sum, c) => sum + c.amount, 0);
+    // 2. Create/Update Collection record for the target store
+    if (amount !== undefined && amount !== null && amount > 0) {
+      // Find existing collection for this store & date
+      let collection = await Collection.findOne({
+        storeId: targetStoreId,
+        date: collectionDate,
+      });
 
-    // Update store totals
-    store.totalCollected = totalCollected;
-    store.remainingAmount = store.targetAmount - totalCollected;
-    
-    // Ensure remaining amount doesn't go below 0 (optional based on business logic)
-    // if (store.remainingAmount < 0) store.remainingAmount = 0;
+      if (collection) {
+        collection.amount += amount;
+        if (description) {
+          collection.description = collection.description
+            ? collection.description + "; " + description
+            : description;
+        }
+        await collection.save();
+      } else {
+        await Collection.create({
+          storeId: targetStoreId,
+          date: collectionDate,
+          amount,
+          description,
+        });
+      }
+    }
 
-    await store.save();
-
-    res.json({ message: "Collection saved successfully", collection, store });
+    res.json({ message: "Transaction saved successfully", store });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
@@ -64,7 +82,7 @@ exports.getCollectionsByDate = async (req, res) => {
 
   try {
     const collections = await Collection.find({ date: new Date(date) })
-      .populate("storeId")   
+      .populate("storeId")
       .lean();
     res.json({ collections });
   } catch (error) {

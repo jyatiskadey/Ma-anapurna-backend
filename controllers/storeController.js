@@ -3,7 +3,7 @@ const Collection = require("../models/Collection");
 
 // Add store
 exports.addStore = async (req, res) => {
-  const { storeName, collection, pageNumber, description } = req.body;
+  const { storeName, collection, pageNumber, description, date } = req.body;
 
   // Validate required fields
   if (!storeName || collection === undefined) {
@@ -19,6 +19,7 @@ exports.addStore = async (req, res) => {
       remainingAmount: collection,
       pageNumber,
       description,
+      date: date ? new Date(date) : undefined,
       status: "active",
     });
 
@@ -64,7 +65,7 @@ exports.updateStoreStatus = async (req, res) => {
 
 exports.updateStore = async (req, res) => {
   const { storeId } = req.params;
-  const { storeName, targetAmount, pageNumber, description } = req.body;
+  const { storeName, targetAmount, pageNumber, description, date } = req.body;
 
   try {
     const store = await Store.findById(storeId);
@@ -78,9 +79,30 @@ exports.updateStore = async (req, res) => {
     }
     if (pageNumber !== undefined) store.pageNumber = pageNumber;
     if (description !== undefined) store.description = description;
+    if (date !== undefined) store.date = date ? new Date(date) : undefined;
 
     await store.save();
     res.json({ message: "Store updated successfully", store });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.deleteStore = async (req, res) => {
+  const { storeId } = req.params;
+
+  try {
+    const store = await Store.findById(storeId);
+    if (!store) return res.status(404).json({ message: "Store not found" });
+
+    // Delete associated collections
+    await Collection.deleteMany({ storeId });
+
+    // Delete store
+    await Store.findByIdAndDelete(storeId);
+
+    res.json({ message: "Store and associated collections deleted successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
