@@ -90,10 +90,48 @@ exports.getCollectionsByDate = async (req, res) => {
   }
 
   try {
-    const collections = await Collection.find({ date: new Date(date) })
+    const filter = { date: new Date(date) };
+    if (req.query.storeId) {
+      filter.storeId = req.query.storeId;
+    } else if (req.query.storeName) {
+      // If storeName is provided, find all store IDs with that name
+      const stores = await Store.find({ storeName: req.query.storeName }).select("_id");
+      const storeIds = stores.map(s => s._id);
+      filter.storeId = { $in: storeIds };
+    }
+    const collections = await Collection.find(filter)
       .populate("storeId")
       .lean();
     res.json({ collections });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getTodayTotalCollection = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    const result = await Collection.aggregate([
+      {
+        $match: {
+          date: { $gte: today, $lt: tomorrow }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$amount" }
+        }
+      }
+    ]);
+
+    const total = result.length > 0 ? result[0].total : 0;
+    res.json({ total });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });

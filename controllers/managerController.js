@@ -42,10 +42,13 @@ exports.login = async (req, res) => {
     const token = jwt.sign(
       { id: manager._id, username: manager.username },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" },
     );
 
-    res.json({ message: "Login successful", token, username: manager.username });
+    res.json({
+      message: "Login successful",
+      token,
+      username: manager.username,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
@@ -138,7 +141,10 @@ exports.updateManager = async (req, res) => {
     if (password) manager.password = password;
 
     await manager.save();
-    res.json({ message: "Manager updated successfully", manager: { username: manager.username, id: manager._id } });
+    res.json({
+      message: "Manager updated successfully",
+      manager: { username: manager.username, id: manager._id },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
